@@ -40,8 +40,8 @@ function sendDecision(decision) {
   logAction(`Operator marked image as: ${decision.toUpperCase()}`);
 }
 
-document.getElementById("acceptBtn").onclick = () => sendDecision("accept");
-document.getElementById("rejectBtn").onclick = () => sendDecision("reject");
+document.getElementById("acceptBtn").onclick = () => sendDecision("Good");
+document.getElementById("rejectBtn").onclick = () => sendDecision("Defect");
 
 
 // LOAD LOG (placeholder backend)
