@@ -11,8 +11,23 @@
 <div class="container">
 
   <div class="live-image">
-    <img id="liveVideo">
+   <video id="webcam" autoplay playsinline width="640" height="480"></video>
     <button onclick="snapshot()">Take Snapshot</button>
+    <script>
+      const video = document.getElementById('webcam');
+
+          async function startWebcam() {
+              try {
+                  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                  video.srcObject = stream;
+              } catch (error) {
+                  console.error("Error accessing webcam:", error);
+              }
+          }
+
+          startWebcam();
+
+    </script>
   </div>
 
   <div class="image-panel">
