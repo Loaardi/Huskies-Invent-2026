@@ -24,8 +24,7 @@ function snapshot() {
 document.getElementById("rejectBtn").onclick = () => sendDecision("Fail");
 
   
-
-/* function sendDecision(decision) {
+ function sendDecision(decision) {
   if (!currentTimestamp) {
     logAction("No image to evaluate");
     return;
@@ -33,7 +32,6 @@ document.getElementById("rejectBtn").onclick = () => sendDecision("Fail");
  
   logAction(`Operator marked image as: ${decision.toUpperCase()}`);
 }
-*/
 
 
 function loadLog() {}
@@ -56,4 +54,3 @@ function sendInspection(data) {
     body: JSON.stringify(data)
   });
 }
-
