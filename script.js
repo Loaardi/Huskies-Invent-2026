@@ -65,14 +65,3 @@ function updateConfidence(value) {
 
   document.getElementById("confidenceValue").textContent = value + "%";
 }
-
-//shell call
-function sendInspection(data) {
-  console.log("Sending to backend:", data);
-
-  return fetch("/api/inspection", {
-    method: "POST",
-    headers: {"Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  });
-}
