@@ -2,3 +2,7 @@ python-dotenv==1.0.0
 roboflow==1.1.27
 opencv-python==4.8.0.76
 streamlit==1.32.0
+flask==2.3.0
+flask-cors==4.0.0
+requests==2.31.0
+ 

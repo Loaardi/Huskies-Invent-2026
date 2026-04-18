@@ -5,63 +5,131 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
+ 
 <h1>Operator Dashboard</h1>
-
+ 
 <div class="container">
-
+ 
   <div class="live-image">
-    <div style="display: flex; gap: 10px; align-items: flex-start;">
+    <div style="display: flex; gap: 10px; align-items: flex-start; border-style: solid; border-radius: 5px;">
       <video id="webcam" autoplay playsinline width="640" height="480"></video>
-     
       <canvas id="canvas" width="640" height="480"></canvas>
     </div>
     <div style="margin-top: 10px;">
-        <button id="snap" style="padding: 10px 20px;">Take Photo</button>
+      <button id="snap" style="padding: 10px 20px;">Take Photo</button>
     </div>
-    <script>
-      const video = document.getElementById('webcam');
-
-          async function startWebcam() {
-              try {
-                  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                  video.srcObject = stream;
-              } catch (error) {
-                  console.error("Error accessing webcam:", error);
-              }
-          }
-
-          startWebcam();
-
-          const canvas = document.querySelector("#canvas");
-          const snap = document.querySelector("#snap");
-          const context = canvas.getContext("2d");
-
-        // Trigger photo capture on button click
-        snap.addEventListener("click", () => {
-            // This draws the current video frame onto the canvas
-            context.drawImage(video, 0, 0, 640, 480);
-        });
-
-    </script>
   </div>
-
+ 
   <div class="image-panel">
     <img id="defectImg">
-  
-
-  <div class="actions">
-    <button id="acceptBtn">✔ Good img</button>
-    <button id="rejectBtn">✖ Defect img</button>
+    <div class="actions">
+      <button id="acceptBtn">✔ Good img</button>
+      <button id="rejectBtn">✖ Defect img</button>
+    </div>
   </div>
+ 
 </div>
-</div>
-
+ 
 <div id="logContainer">
   <h3>Status Log</h3>
   <ul id="log"></ul>
 </div>
-
-<script src="script.js"></script>
+ 
+<script>
+  // FIX 1: Declare currentTimestamp properly
+  let currentTimestamp = null;
+ 
+  const video  = document.getElementById("webcam");
+  const canvas = document.getElementById("canvas");
+  const snap   = document.getElementById("snap");
+  const context = canvas.getContext("2d");
+ 
+  // Start webcam
+  async function startWebcam() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+    } catch (error) {
+      console.error("Error accessing webcam:", error);
+      logAction("Webcam access denied or unavailable");
+    }
+  }
+  startWebcam();
+ 
+  // Logging
+  function logAction(action) {
+    const log  = document.getElementById("log");
+    const time = new Date().toLocaleTimeString();
+    const entry = document.createElement("li");
+    entry.textContent = `${action} at ${time}`;
+    log.prepend(entry);
+  }
+ 
+  // Snap button → capture frame → send to Roboflow
+  snap.addEventListener("click", async () => {
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    currentTimestamp = Date.now();
+    logAction("Snapshot taken");
+    await predictImage();
+  });
+ 
+  // Call local Flask backend (avoids CORS issues)
+  async function predictImage() {
+    const dataUrl     = canvas.toDataURL("image/jpeg");
+    const base64Image = dataUrl.split(",")[1];
+ 
+    logAction("Sending to Flask backend…");
+ 
+    try {
+      const response = await fetch(
+        "http://localhost:5000/predict",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image: base64Image
+          })
+        }
+      );
+ 
+      const result = await response.json();
+      console.log("Roboflow response:", result);
+ 
+      // Try the most common output key paths returned by Roboflow workflows
+      const output = result?.outputs?.[0];
+      const imageBase64 =
+        output?.output_image?.value ||   // most common workflow key
+        output?.image?.value            ||   // alternative key
+        output?.visualized_image        ||   // another variant
+        output?.image;                        // fallback plain string
+ 
+      if (imageBase64) {
+        document.getElementById("defectImg").src =
+          "data:image/jpeg;base64," + imageBase64;
+        logAction("Prediction complete — annotated image displayed");
+      } else {
+        logAction("Prediction returned no image — check console for raw response");
+      }
+ 
+    } catch (error) {
+      console.error("Roboflow error:", error);
+      logAction("Prediction failed — see console");
+    }
+  }
+ 
+  // Accept / Reject
+  function sendDecision(decision) {
+    if (!currentTimestamp) {
+      logAction("No image to evaluate");
+      return;
+    }
+    logAction(`Operator marked image as: ${decision.toUpperCase()}`);
+  }
+ 
+  document.getElementById("acceptBtn").onclick = () => sendDecision("Good");
+  document.getElementById("rejectBtn").onclick = () => sendDecision("Defect");
+</script>
+ 
 </body>
 </html>
+ 
