@@ -17,16 +17,12 @@ function logAction(action) {
 function snapshot() {
   const canvas = document.querySelector("#canvas");
 
-  // TEMPORARY FRONTEND PLACEHOLDER:
-  currentTimestamp = Date.now(); // fake timestamp
-  document.getElementById("liveVideo").src =
-    "https://via.placeholder.com/300?text=Live+Feed+" + Math.random();
-
-  document.getElementById("defectImg").src =
-    "https://via.placeholder.com/300/ff0000?text=Annotated+" + Math.random();
-
-  logAction("Snapshot taken (placeholder)");
+  currentTimestamp = Date.now();
 }
+
+  document.getElementById("acceptBtn").onclick = () => sendDecision("Good");
+document.getElementById("rejectBtn").onclick = () => sendDecision("Defect");
+
   
 // ACCEPT / REJECT (placeholder)
 
@@ -36,18 +32,12 @@ function sendDecision(decision) {
     return;
   }
 
-  // Placeholder backend call:
  
   logAction(`Operator marked image as: ${decision.toUpperCase()}`);
 }
 
-document.getElementById("acceptBtn").onclick = () => sendDecision("Good");
-document.getElementById("rejectBtn").onclick = () => sendDecision("Defect");
 
 
-// LOAD LOG (placeholder backend)
-function loadLog() {
-
-}
+function loadLog() {}
 
 loadLog();

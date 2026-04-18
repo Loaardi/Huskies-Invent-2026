@@ -13,12 +13,20 @@
   <div class="live-image">
     <div style="display: flex; gap: 10px; align-items: flex-start;">
       <video id="webcam" autoplay playsinline width="640" height="480"></video>
-     
-      <canvas id="canvas" width="640" height="480"></canvas>
+      <div class="snapshot-section">
+          <canvas id="canvas" width="640" height="480"></canvas>
+
+          <div class="actions">
+              <button id="acceptBtn">✔ Good</button>
+              <button id="rejectBtn">✖ Defect</button>
+          </div>
+      </div>
     </div>
+
     <div style="margin-top: 10px;">
         <button id="snap" style="padding: 10px 20px;">Take Photo</button>
     </div>
+</div>
     <script>
       const video = document.getElementById('webcam');
 
@@ -30,7 +38,7 @@
                   console.error("Error accessing webcam:", error);
               }
           }
-
+ 
           startWebcam();
 
           const canvas = document.querySelector("#canvas");
@@ -41,26 +49,17 @@
         snap.addEventListener("click", () => {
             // This draws the current video frame onto the canvas
             context.drawImage(video, 0, 0, 640, 480);
+            snapshot();
         });
 
     </script>
-  </div>
 
-  <div class="image-panel">
-    <img id="defectImg">
+  </div>
   
-
-  <div class="actions">
-    <button id="acceptBtn">✔ Good img</button>
-    <button id="rejectBtn">✖ Defect img</button>
+  <div id="logContainer" style="margin-top: 30px;">
+    <h3>Status Log</h3>
+    <ul id="log"></ul>
   </div>
-</div>
-</div>
-
-<div id="logContainer">
-  <h3>Status Log</h3>
-  <ul id="log"></ul>
-</div>
 
 <script src="script.js"></script>
 </body>
