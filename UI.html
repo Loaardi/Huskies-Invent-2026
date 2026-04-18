@@ -6,33 +6,29 @@
 </head>
 <body>
  
-<h1>Operator Dashboard</h1>
+  <h1>Operator Dashboard</h1>
  
-<div class="container">
- 
-  <div class="live-image">
-    <div style="display: flex; gap: 10px; align-items: flex-start; border-style: solid; border-radius: 5px;">
-      <video id="webcam" autoplay playsinline width="640" height="480"></video>
-      <div class="snapshot-section">
-          <canvas id="canvas" width="640" height="480"></canvas>
-
-          <div class="actions">
-              <button id="acceptBtn">✔ Pass</button>
-              <button  id="rejectBtn">✖ Fail</button>
-          </div>
-      </div>
+  <div class="container">
+   
+    <div class="live-image">
+        <video id="webcam" autoplay playsinline width="640" height="480"></video>
+        <button id="snap">📸 Take Snapshot</button>
     </div>
-    
-
-    <div style="margin-top: 10px;">
-        <button id="snap" style="padding: 10px 20px;">Take Photo</button>
-     </div>
+  
+    <div class="snapshot-section">
+        <canvas id="canvas" width="640" height="480"></canvas>
+        <div class="actions">
+            <button id="acceptBtn">✔ Pass</button>
+            <button id="rejectBtn">✖ Fail</button>
+        </div>
+    </div>
+  
+    <div class="confidence-table">
+      <h3>Confidence</h3>
+      <div id="confidenceValue">--%</div>
+    </div>
+  
   </div>
-  <div class="confidence-table">
-    <h3>Confidence</h3>
-    <div id="confidenceValue">.</div>
-</div>
-</div>
     <script>
       const video = document.getElementById('webcam');
 
@@ -60,8 +56,8 @@
 
     </script>
   
-  <div id="logContainer" style="margin-top: 30px;">
-    <h3>Status Log</h3>
+  <div id="logContainer">
+    <h3>System Status Log</h3>
     <ul id="log"></ul>
   </div>
 
