@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Operator Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<h1>Operator Dashboard</h1>
+
+<div class="container">
+
+  <div class="live-image">
+    <img id="liveVideo">
+    <button onclick="snapshot()">Take Snapshot</button>
+  </div>
+
+  <div class="image-panel">
+    <img id="defectImg">
+  </div>
+
+  <div class="actions">
+    <button id="acceptBtn">✔ Confirm</button>
+    <button id="rejectBtn">✖ Reject</button>
+  </div>
+
+</div>
+
+<div id="logContainer">
+  <h3>Status Log</h3>
+  <ul id="log"></ul>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
