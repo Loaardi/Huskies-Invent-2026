@@ -14,6 +14,8 @@ body {
 #webcam {
   border: 3px solid #444;
   border-radius: 6px;
+  width: 500px;
+  height: auto;
 }
 
 .snapshot-section {
@@ -21,6 +23,8 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 15px;
+  
+  height: auto;
 }
 
 .actions {
@@ -94,4 +98,33 @@ button:active {
 }
 #canvas {
   border: 3px solid #444;
+  width: 500px;
+  height: auto;
+}
+
+.confidence-table {
+  width: 300px;
+  height: 346px;
+  border: 3px solid #444;
+  border-radius: 6px;
+  padding: 15px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+}
+
+.confidence-table h3 {
+  margin: 0;
+  font-size: 20px;
+  text-align: center;
+}
+
+#confidenceValue {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  margin-top: 20px;
 }

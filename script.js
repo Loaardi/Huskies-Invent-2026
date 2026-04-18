@@ -13,31 +13,47 @@ function logAction(action) {
   log.prepend(entry);
 }
 
-// SNAPSHOT (placeholder backend)
+// SNAPSHOT
 function snapshot() {
   const canvas = document.querySelector("#canvas");
 
   currentTimestamp = Date.now();
 }
 
-  document.getElementById("acceptBtn").onclick = () => sendDecision("Good");
-document.getElementById("rejectBtn").onclick = () => sendDecision("Defect");
+  document.getElementById("acceptBtn").onclick = () => sendDecision("Pass");
+document.getElementById("rejectBtn").onclick = () => sendDecision("Fail");
 
   
-// ACCEPT / REJECT (placeholder)
 
-function sendDecision(decision) {
+/* function sendDecision(decision) {
   if (!currentTimestamp) {
     logAction("No image to evaluate");
     return;
   }
-
  
   logAction(`Operator marked image as: ${decision.toUpperCase()}`);
 }
-
+*/
 
 
 function loadLog() {}
 
 loadLog();
+
+function updateConfidence(value) {
+  // data goes here
+
+  document.getElementById("confidenceValue").textContent = value + "%";
+}
+
+//shell call
+function sendInspection(data) {
+  console.log("Sending to backend:", data);
+
+  return fetch("/api/inspection", {
+    method: "POST",
+    headers: {"Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+}
+

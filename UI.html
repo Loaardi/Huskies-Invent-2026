@@ -17,16 +17,21 @@
           <canvas id="canvas" width="640" height="480"></canvas>
 
           <div class="actions">
-              <button id="acceptBtn">✔ Good</button>
-              <button id="rejectBtn">✖ Defect</button>
+              <button id="acceptBtn">✔ Pass</button>
+              <button  id="rejectBtn">✖ Fail</button>
           </div>
       </div>
     </div>
+    
 
     <div style="margin-top: 10px;">
         <button id="snap" style="padding: 10px 20px;">Take Photo</button>
      </div>
   </div>
+  <div class="confidence-table">
+    <h3>Confidence</h3>
+    <div id="confidenceValue">.</div>
+</div>
 </div>
     <script>
       const video = document.getElementById('webcam');
