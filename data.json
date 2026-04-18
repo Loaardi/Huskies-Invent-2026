@@ -1,0 +1,9 @@
+{
+    "workOrderNumber": "WO-12345",
+    "imageUrl": "https://server.com/img1.jpg",
+    "defectType": "crack",
+    "confidence": 0.92,
+    "operatorDecision": "accept",
+    "operatorName": "John",
+    "timestamp": "2026-04-18T10:30:00Z"
+  }
