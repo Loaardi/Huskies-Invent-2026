@@ -11,8 +11,14 @@
 <div class="container">
 
   <div class="live-image">
-   <video id="webcam" autoplay playsinline width="640" height="480"></video>
-    <button id = "snapshotButton" onclick="snapshot()">Take Snapshot</button>
+    <div style="display: flex; gap: 10px; align-items: flex-start;">
+      <video id="webcam" autoplay playsinline width="640" height="480"></video>
+     
+      <canvas id="canvas" width="640" height="480"></canvas>
+    </div>
+    <div style="margin-top: 10px;">
+        <button id="snap" style="padding: 10px 20px;">Take Photo</button>
+    </div>
     <script>
       const video = document.getElementById('webcam');
 
@@ -26,6 +32,16 @@
           }
 
           startWebcam();
+
+          const canvas = document.querySelector("#canvas");
+          const snap = document.querySelector("#snap");
+          const context = canvas.getContext("2d");
+
+        // Trigger photo capture on button click
+        snap.addEventListener("click", () => {
+            // This draws the current video frame onto the canvas
+            context.drawImage(video, 0, 0, 640, 480);
+        });
 
     </script>
   </div>

@@ -15,6 +15,7 @@ function logAction(action) {
 
 // SNAPSHOT (placeholder backend)
 function snapshot() {
+  const canvas = document.querySelector("#canvas");
 
   // TEMPORARY FRONTEND PLACEHOLDER:
   currentTimestamp = Date.now(); // fake timestamp
