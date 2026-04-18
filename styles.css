@@ -13,22 +13,60 @@ body {
 .image-panel img,
 .live-image img {
   width: 300px;
-  border: 2px solid #ccc;
+  height: auto;
+  border: 2px solid hsl(0, 0%, 80%);
 }
 
 .actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 10px;
+  margin-top: 200px;
 }
 
-button {
-  padding: 10px;
+#snapshotButton {
+  background: #007bff;
+  color: white;
+  padding: 12px 20px;
   border: none;
   border-radius: 6px;
+  font-size: 16px;
   cursor: pointer;
+  transition: 0.2s ease;
+  margin-left: 200px;
 }
 
+#acceptBtn {
+  background: #26ff00;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.2s ease;
+
+}
+
+#rejectBtn {
+  background: #ff0000;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+button:hover {
+  background: #0069d9;
+  transform: translateY(-2px);
+}
+
+button:active {
+  background: #005cbf;
+  transform: translateY(0);
+}
 #log {
   background: white;
   padding: 10px;

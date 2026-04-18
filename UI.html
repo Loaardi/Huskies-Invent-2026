@@ -12,7 +12,7 @@
 
   <div class="live-image">
    <video id="webcam" autoplay playsinline width="640" height="480"></video>
-    <button onclick="snapshot()">Take Snapshot</button>
+    <button id = "snapshotButton" onclick="snapshot()">Take Snapshot</button>
     <script>
       const video = document.getElementById('webcam');
 
@@ -32,13 +32,13 @@
 
   <div class="image-panel">
     <img id="defectImg">
-  </div>
+  
 
   <div class="actions">
     <button id="acceptBtn">✔ Good img</button>
     <button id="rejectBtn">✖ Defect img</button>
   </div>
-
+</div>
 </div>
 
 <div id="logContainer">

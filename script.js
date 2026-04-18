@@ -8,7 +8,7 @@ function logAction(action) {
   const time = new Date().toLocaleTimeString();
 
   const entry = document.createElement("li");
-  entry.textContent = `${time} - ${action}`;
+  entry.textContent = `${action} at ${time}`;
 
   log.prepend(entry);
 }
