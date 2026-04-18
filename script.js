@@ -48,6 +48,5 @@ document.getElementById("rejectBtn").onclick = () => sendDecision("Defect");
 function loadLog() {
 
 }
-//just a test
 
 loadLog();
