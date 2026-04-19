@@ -122,12 +122,37 @@ function snapshot() {
 document.getElementById("acceptBtn").onclick = () => sendDecision("Pass");
 document.getElementById("rejectBtn").onclick = () => sendDecision("Fail");
 
+  
+
+let operatorName = "Unknown";
+
+document.getElementById("saveOperator").onclick = function() {
+    const nameInput = document.getElementById("operatorName").value;
+    if (nameInput.trim() !== "") {
+        operatorName = nameInput;
+        logAction(`Operator set to: ${operatorName}`);
+        
+
+        this.textContent = "Saved!";
+        this.style.background = "#2ecc71";
+        setTimeout(() => {
+            this.textContent = "Save";
+            this.style.background = "#30475e";
+        }, 2000);
+    } else {
+        logAction("Please enter a valid name");
+    }
+};
+
+
 function sendDecision(decision) {
   if (!currentTimestamp) {
     logAction("No image to evaluate");
     return;
   }
-  logAction(`Operator marked image as: ${decision.toUpperCase()}`);
+ 
+
+  logAction(`[Op: ${operatorName}] marked image as: ${decision.toUpperCase()}`);
 }
 
 function loadLog() {}
