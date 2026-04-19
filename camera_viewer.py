@@ -39,7 +39,7 @@ def predict():
     api_key = config["api_key"]
 
     response = requests.post(
-        "https://serverless.roboflow.com/feavens-workspace/workflows/detect-count-and-visualize",
+        "https://serverless.roboflow.com/feavens-workspace/workflows/detect-count-and-visualize-8",
         json={
             "api_key": api_key,
             "inputs": {
@@ -55,10 +55,7 @@ def predict():
 
     # Log a warning if the annotated visualization is missing, to help with debugging
     outputs = result.get("outputs", [])
-    if not outputs or not (
-        outputs[0].get("predictions", {}).get("visualization") or
-        outputs[0].get("visualization")
-    ):
+    if not outputs or not outputs[0].get("output_image"):
         print("⚠️  Warning: Roboflow response did not include a visualization. "
               "Check that your workflow step outputs 'visualization'.")
 

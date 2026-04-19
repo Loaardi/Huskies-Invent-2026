@@ -15,14 +15,13 @@ function logAction(action) {
 function applyBronzeMask(canvas) {
   const context = canvas.getContext("2d");
   const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-  const pixels = imageData.data; // RGBA array
+  const pixels = imageData.data;
 
   for (let i = 0; i < pixels.length; i += 4) {
     const r = pixels[i];
     const g = pixels[i + 1];
     const b = pixels[i + 2];
 
-    // Convert to HSV to make color range detection more robust
     const rNorm = r / 255, gNorm = g / 255, bNorm = b / 255;
     const max = Math.max(rNorm, gNorm, bNorm);
     const min = Math.min(rNorm, gNorm, bNorm);
@@ -36,27 +35,27 @@ function applyBronzeMask(canvas) {
     }
     if (h < 0) h += 360;
 
-    const s = max === 0 ? 0 : delta / max;  // Saturation 0–1
-    const v = max;                           // Value/brightness 0–1
+    const s = max === 0 ? 0 : delta / max;
+    const v = max;
 
-    // Bronze/copper HSV range:
-    //   Hue: 15–45° (orange-yellow-brown)
-    //   Saturation: > 20% (not grey/white)
-    //   Value: > 15% (not black)
-    const isBronze = (h >= 10 && h <= 55) && (s >= 0.20) && (v >= 0.15);
+    const isPlate = (
+      // Original warm bronze/copper
+      ((h >= 10 && h <= 55) && (s >= 0.20) && (v >= 0.15))
+      ||
+      // Gray-beige plate tones (your specific RGB samples)
+      ((h >= 15 && h <= 55) && (s >= 0.03 && s <= 0.25) && (v >= 0.55 && v <= 0.85))
+    );
 
-    if (!isBronze) {
-      // Black out non-bronze pixels
+    // Black out everything that is NOT the plate
+    if (isPlate) {
       pixels[i]     = 0;
       pixels[i + 1] = 0;
       pixels[i + 2] = 0;
-      // Keep alpha as-is
     }
   }
 
   context.putImageData(imageData, 0, 0);
 }
-
 // SNAPSHOT — captures frame, applies bronze mask, sends to Roboflow, draws annotated result
 function snapshot() {
   const canvas = document.querySelector("#canvas");
@@ -65,8 +64,8 @@ function snapshot() {
   currentTimestamp = Date.now();
 
   // Apply bronze color mask to isolate the plate
-  //applyBronzeMask(canvas);
-  //logAction("Bronze mask applied");
+ /*  applyBronzeMask(canvas);
+  logAction("Bronze mask applied"); */
 
   // Get masked image as base64
   const base64Image = canvas.toDataURL("image/jpeg").split(",")[1];
@@ -81,9 +80,11 @@ function snapshot() {
     .then(res => res.json())
     .then(data => {
       const output = data?.outputs?.[0];
+console.log("output_image:", JSON.stringify(output?.output_image));
+console.log("detection_viz:", JSON.stringify(output?.detection_visualization_output));
 
       // Annotated image is in detection_visualization_output.image.value
-      const annotatedBase64 = output?.detection_visualization_output?.image?.value || null;
+      const annotatedBase64 = output?.output_image?.value || output?.detection_visualization_output?.image?.value || null;
 
       if (annotatedBase64) {
         const img = new Image();
