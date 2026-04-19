@@ -195,3 +195,18 @@ button:hover {
   font-family: 'Courier New', Courier, monospace;
   color: #00ffcc;
 }
+.scan-btn {
+  margin-top: 10px;
+  padding: 12px 18px;
+  background: #30475e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.scan-btn:hover {
+  background: #3d5a73;
+}

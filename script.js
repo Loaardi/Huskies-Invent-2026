@@ -122,6 +122,7 @@ function snapshot() {
 
 document.getElementById("acceptBtn").onclick = () => sendDecision("Pass");
 document.getElementById("rejectBtn").onclick = () => sendDecision("Fail");
+document.getElementById("scanDemoBtn").onclick = scanDemoImage;
 
   
 
@@ -188,4 +189,23 @@ loadLog();
 function updateConfidence(value) {
   document.getElementById("confidenceValue").textContent = value + "%";
 }
+async function scanDemoImage() {
+  logAction("Scanning demo image...");
 
+  const res = await fetch("/scan-demo-image", {
+    method: "POST"
+  });
+
+  const data = await res.json();
+  console.log(data);
+
+  const prediction = data?.predictions?.[0];
+
+  if (prediction?.confidence != null) {
+    updateConfidence(Math.round(prediction.confidence * 100));
+    logAction(`Confidence: ${Math.round(prediction.confidence * 100)}%`);
+  } else {
+    logAction("No detection returned");
+    updateConfidence(0);
+  }
+}
