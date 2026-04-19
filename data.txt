@@ -1,0 +1,298 @@
+-- ============================================================
+-- Bronze Plate Casting Defect Detection - Database Schema
+-- T-SQL (SQL Server)
+-- ============================================================
+
+-- Create the database
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'BronzePlateInspection')
+BEGIN
+    CREATE DATABASE BronzePlateInspection;
+END
+GO
+
+USE BronzePlateInspection;
+GO
+
+-- ============================================================
+-- TABLE: Operators
+-- Stores operator (user) information
+-- ============================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Operators')
+BEGIN
+    CREATE TABLE Operators (
+        OperatorID      INT IDENTITY(1,1) PRIMARY KEY,
+        FirstName       NVARCHAR(50)    NOT NULL,
+        LastName        NVARCHAR(50)    NOT NULL,
+        EmployeeNumber  NVARCHAR(20)    NOT NULL UNIQUE,
+        IsActive        BIT             NOT NULL DEFAULT 1,
+        CreatedAt       DATETIME2       NOT NULL DEFAULT GETDATE()
+    );
+END
+GO
+
+-- ============================================================
+-- TABLE: ErrorTypes
+-- Lookup table for defect categories detected by the model
+-- ============================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ErrorTypes')
+BEGIN
+    CREATE TABLE ErrorTypes (
+        ErrorTypeID     INT IDENTITY(1,1) PRIMARY KEY,
+        ErrorCode       NVARCHAR(20)    NOT NULL UNIQUE,
+        ErrorName       NVARCHAR(100)   NOT NULL,
+        Description     NVARCHAR(500)   NULL,
+        Severity        NVARCHAR(20)    NOT NULL DEFAULT 'Medium'
+            CHECK (Severity IN ('Low', 'Medium', 'High', 'Critical')),
+        IsActive        BIT             NOT NULL DEFAULT 1
+    );
+END
+GO
+
+-- ============================================================
+-- TABLE: Inspections
+-- Main table - one row per inspection event
+-- ============================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Inspections')
+BEGIN
+    CREATE TABLE Inspections (
+        InspectionID    INT IDENTITY(1,1) PRIMARY KEY,
+        WorkOrderNumber NVARCHAR(50)    NOT NULL,
+
+        -- AI / Roboflow response
+        AIResult        NVARCHAR(10)    NOT NULL
+            CHECK (AIResult IN ('Pass', 'Fail')),
+        AIConfidence    DECIMAL(5,4)    NULL,           -- e.g. 0.9543 (95.43%)
+        AIResponseJSON  NVARCHAR(MAX)   NULL,           -- full Roboflow JSON for traceability
+
+        -- Error info (NULL when AIResult = 'Pass')
+        ErrorTypeID     INT             NULL
+            REFERENCES ErrorTypes(ErrorTypeID),
+
+        -- Operator decision
+        OperatorDecision NVARCHAR(10)   NOT NULL
+            CHECK (OperatorDecision IN ('Pass', 'Fail')),
+        OperatorNotes   NVARCHAR(1000)  NULL,
+
+        -- Who and when
+        OperatorID      INT             NOT NULL
+            REFERENCES Operators(OperatorID),
+        InspectionDate  DATETIME2       NOT NULL DEFAULT GETDATE(),
+
+        -- Image reference (path or URL to the captured image)
+        ImagePath       NVARCHAR(500)   NULL
+    );
+END
+GO
+
+-- ============================================================
+-- INDEXES for common queries
+-- ============================================================
+CREATE NONCLUSTERED INDEX IX_Inspections_WorkOrder
+    ON Inspections(WorkOrderNumber);
+
+CREATE NONCLUSTERED INDEX IX_Inspections_Date
+    ON Inspections(InspectionDate DESC);
+
+CREATE NONCLUSTERED INDEX IX_Inspections_Operator
+    ON Inspections(OperatorID);
+
+CREATE NONCLUSTERED INDEX IX_Inspections_AIResult
+    ON Inspections(AIResult);
+GO
+
+-- ============================================================
+-- VIEW: InspectionLog
+-- Friendly view joining all tables - use this in the UI
+-- ============================================================
+CREATE OR ALTER VIEW vw_InspectionLog
+AS
+    SELECT
+        i.InspectionID,
+        i.WorkOrderNumber,
+        i.AIResult,
+        i.AIConfidence,
+        e.ErrorCode,
+        e.ErrorName,
+        e.Severity       AS ErrorSeverity,
+        i.OperatorDecision,
+        i.OperatorNotes,
+        CASE
+            WHEN i.AIResult <> i.OperatorDecision THEN 'Override'
+            ELSE 'Agreed'
+        END              AS AgreementStatus,
+        o.FirstName + ' ' + o.LastName AS OperatorName,
+        o.EmployeeNumber,
+        i.InspectionDate,
+        i.ImagePath
+    FROM Inspections i
+    INNER JOIN Operators o   ON i.OperatorID = o.OperatorID
+    LEFT  JOIN ErrorTypes e  ON i.ErrorTypeID = e.ErrorTypeID;
+GO
+
+-- ============================================================
+-- STORED PROCEDURE: Insert a new inspection
+-- Called by the backend after Roboflow returns a result
+-- ============================================================
+CREATE OR ALTER PROCEDURE sp_InsertInspection
+    @WorkOrderNumber    NVARCHAR(50),
+    @AIResult           NVARCHAR(10),
+    @AIConfidence       DECIMAL(5,4)    = NULL,
+    @AIResponseJSON     NVARCHAR(MAX)   = NULL,
+    @ErrorCode          NVARCHAR(20)    = NULL,
+    @OperatorDecision   NVARCHAR(10),
+    @OperatorNotes      NVARCHAR(1000)  = NULL,
+    @EmployeeNumber     NVARCHAR(20),
+    @ImagePath          NVARCHAR(500)   = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @OperatorID INT;
+    DECLARE @ErrorTypeID INT = NULL;
+
+    -- Look up operator
+    SELECT @OperatorID = OperatorID
+    FROM Operators
+    WHERE EmployeeNumber = @EmployeeNumber AND IsActive = 1;
+
+    IF @OperatorID IS NULL
+    BEGIN
+        RAISERROR('Operator not found or inactive: %s', 16, 1, @EmployeeNumber);
+        RETURN;
+    END
+
+    -- Look up error type if provided
+    IF @ErrorCode IS NOT NULL
+    BEGIN
+        SELECT @ErrorTypeID = ErrorTypeID
+        FROM ErrorTypes
+        WHERE ErrorCode = @ErrorCode AND IsActive = 1;
+
+        IF @ErrorTypeID IS NULL
+        BEGIN
+            RAISERROR('Error code not found: %s', 16, 1, @ErrorCode);
+            RETURN;
+        END
+    END
+
+    -- Insert the inspection record
+    INSERT INTO Inspections (
+        WorkOrderNumber, AIResult, AIConfidence, AIResponseJSON,
+        ErrorTypeID, OperatorDecision, OperatorNotes,
+        OperatorID, InspectionDate, ImagePath
+    )
+    VALUES (
+        @WorkOrderNumber, @AIResult, @AIConfidence, @AIResponseJSON,
+        @ErrorTypeID, @OperatorDecision, @OperatorNotes,
+        @OperatorID, GETDATE(), @ImagePath
+    );
+
+    -- Return the new inspection ID
+    SELECT SCOPE_IDENTITY() AS NewInspectionID;
+END
+GO
+
+-- ============================================================
+-- STORED PROCEDURE: Get inspection history with filters
+-- Used by the UI's history/log view
+-- ============================================================
+CREATE OR ALTER PROCEDURE sp_GetInspectionHistory
+    @WorkOrderNumber    NVARCHAR(50)    = NULL,
+    @OperatorID         INT             = NULL,
+    @AIResult           NVARCHAR(10)    = NULL,
+    @DateFrom           DATETIME2       = NULL,
+    @DateTo             DATETIME2       = NULL,
+    @OverridesOnly      BIT             = 0,
+    @PageNumber         INT             = 1,
+    @PageSize           INT             = 50
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT *
+    FROM vw_InspectionLog
+    WHERE (@WorkOrderNumber IS NULL OR WorkOrderNumber = @WorkOrderNumber)
+      AND (@OperatorID IS NULL OR OperatorName LIKE '%' + CAST(@OperatorID AS NVARCHAR) + '%')
+      AND (@AIResult IS NULL OR AIResult = @AIResult)
+      AND (@DateFrom IS NULL OR InspectionDate >= @DateFrom)
+      AND (@DateTo IS NULL OR InspectionDate <= @DateTo)
+      AND (@OverridesOnly = 0 OR AgreementStatus = 'Override')
+    ORDER BY InspectionDate DESC
+    OFFSET (@PageNumber - 1) * @PageSize ROWS
+    FETCH NEXT @PageSize ROWS ONLY;
+END
+GO
+
+-- ============================================================
+-- STORED PROCEDURE: Dashboard summary stats
+-- Powers the summary cards on the UI
+-- ============================================================
+CREATE OR ALTER PROCEDURE sp_GetDashboardStats
+    @DateFrom   DATETIME2 = NULL,
+    @DateTo     DATETIME2 = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Default to today if no dates provided
+    IF @DateFrom IS NULL SET @DateFrom = CAST(GETDATE() AS DATE);
+    IF @DateTo IS NULL SET @DateTo = DATEADD(DAY, 1, CAST(GETDATE() AS DATE));
+
+    -- Summary counts
+    SELECT
+        COUNT(*)                                                    AS TotalInspections,
+        SUM(CASE WHEN AIResult = 'Pass' THEN 1 ELSE 0 END)        AS AIPassCount,
+        SUM(CASE WHEN AIResult = 'Fail' THEN 1 ELSE 0 END)        AS AIFailCount,
+        SUM(CASE WHEN OperatorDecision = 'Pass' THEN 1 ELSE 0 END) AS OperatorPassCount,
+        SUM(CASE WHEN OperatorDecision = 'Fail' THEN 1 ELSE 0 END) AS OperatorFailCount,
+        SUM(CASE WHEN AIResult <> OperatorDecision THEN 1 ELSE 0 END) AS OverrideCount,
+        CAST(AVG(AIConfidence) AS DECIMAL(5,4))                    AS AvgConfidence
+    FROM Inspections
+    WHERE InspectionDate >= @DateFrom
+      AND InspectionDate < @DateTo;
+
+    -- Defects by error type
+    SELECT
+        e.ErrorCode,
+        e.ErrorName,
+        e.Severity,
+        COUNT(*) AS DefectCount
+    FROM Inspections i
+    INNER JOIN ErrorTypes e ON i.ErrorTypeID = e.ErrorTypeID
+    WHERE i.InspectionDate >= @DateFrom
+      AND i.InspectionDate < @DateTo
+      AND i.AIResult = 'Fail'
+    GROUP BY e.ErrorCode, e.ErrorName, e.Severity
+    ORDER BY DefectCount DESC;
+END
+GO
+
+-- ============================================================
+-- SEED DATA: Common casting defect types
+-- ============================================================
+INSERT INTO ErrorTypes (ErrorCode, ErrorName, Description, Severity) VALUES
+    ('SCR', 'Scratch',              'Surface scratch marks on the bronze plate',                 'Low'),
+    ('LIN', 'Lines',                'Visible lines or streaks on the casting surface',           'Medium'),
+    ('SHR', 'Shrink',              'Shrinkage defects or depressions from cooling',             'High'),
+    ('HLE', 'Hole',                'Holes or voids in the casting surface',                     'High'),
+    ('VEN', 'Veins',               'Vein-like marks or metal penetration lines on surface',     'Medium'),
+    ('DIS', 'Discoloration',       'Color irregularities or discolored areas on the plate',     'Low'),
+    ('DRW', 'Draw',                'Draw marks or pulling defects from the mold',               'Medium'),
+    ('LNA', 'Letters Not Aligned', 'Misaligned lettering or text on the plate surface',         'High'),
+    ('RGH', 'Roughness',           'Rough or uneven surface texture beyond tolerance',          'Medium'),
+    ('CSG', 'Carbon Slag',         'Carbon slag inclusions or deposits on the surface',         'High');
+GO
+
+-- ============================================================
+-- SEED DATA: Sample operator for testing
+-- ============================================================
+INSERT INTO Operators (FirstName, LastName, EmployeeNumber) VALUES
+    ('Test', 'Operator', 'EMP001');
+GO
+
+PRINT '=== Schema creation complete ===';
+PRINT 'Tables:  Operators, ErrorTypes, Inspections';
+PRINT 'View:    vw_InspectionLog';
+PRINT 'Procs:   sp_InsertInspection, sp_GetInspectionHistory, sp_GetDashboardStats';
+PRINT 'Run against your SQL Server instance to deploy.';
+GO

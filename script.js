@@ -1,5 +1,6 @@
 // GLOBAL: holds the timestamp of the most recent snapshot
 let currentTimestamp = null;
+let workOrderNumber = "UNKNOWN";
 
 // LOGGING
 function logAction(action) {
@@ -122,38 +123,65 @@ console.log("detection_viz:", JSON.stringify(output?.detection_visualization_out
 
 document.getElementById("acceptBtn").onclick = () => sendDecision("Pass");
 document.getElementById("rejectBtn").onclick = () => sendDecision("Fail");
+document.getElementById("scanDemoBtn").onclick = scanDemoImage;
 
   
 
 let operatorName = "Unknown";
 
 document.getElementById("saveOperator").onclick = function() {
-    const nameInput = document.getElementById("operatorName").value;
-    if (nameInput.trim() !== "") {
-        operatorName = nameInput;
-        logAction(`Operator set to: ${operatorName}`);
-        
+  const nameInput = document.getElementById("operatorName").value;
+  const workInput = document.getElementById("workOrder").value;
 
-        this.textContent = "Saved!";
-        this.style.background = "#2ecc71";
-        setTimeout(() => {
-            this.textContent = "Save";
-            this.style.background = "#30475e";
-        }, 2000);
-    } else {
-        logAction("Please enter a valid name");
-    }
+  if (nameInput.trim() !== "" && workInput.trim() !== "") {
+      operatorName = nameInput;
+      workOrderNumber = workInput;
+
+      logAction(`Operator: ${operatorName}, WO: ${workOrderNumber}`);
+
+      this.textContent = "Saved!";
+      this.style.background = "#2ecc71";
+
+      setTimeout(() => {
+          this.textContent = "Save";
+          this.style.background = "#30475e";
+      }, 2000);
+  } else {
+      logAction("Enter name AND work order");
+  }
 };
 
+function sendInspection(data) {
+  return fetch("/api/inspection", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+}
 
 function sendDecision(decision) {
+  if (operatorName === "Unknown" || workOrderNumber === "UNKNOWN") {
+    logAction("Set operator and work order first");
+    return;
+  }
   if (!currentTimestamp) {
     logAction("No image to evaluate");
     return;
   }
- 
 
-  logAction(`[Op: ${operatorName}] marked image as: ${decision.toUpperCase()}`);
+  const data = {
+    workOrderNumber: workOrderNumber,
+    operatorName: operatorName,
+    operatorDecision: decision,
+    timestamp: new Date().toISOString(),
+    confidence: document.getElementById("confidenceValue").textContent
+  };
+
+  logAction(`[Op: ${operatorName}] WO: ${workOrderNumber} → ${decision}`);
+
+  sendInspection(data)
+    /*.then(() => logAction("Saved to backend"))
+    .catch(() => logAction("Error saving")); */
 }
 
 function loadLog() {}
@@ -162,12 +190,23 @@ loadLog();
 function updateConfidence(value) {
   document.getElementById("confidenceValue").textContent = value + "%";
 }
+async function scanDemoImage() {
+  logAction("Scanning demo image...");
 
-function sendInspection(data) {
-  console.log("Sending to backend:", data);
-  return fetch("/api/inspection", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
+  const res = await fetch("/scan-demo-image", {
+    method: "POST"
   });
+
+  const data = await res.json();
+  console.log(data);
+
+  const prediction = data?.predictions?.[0];
+
+  if (prediction?.confidence != null) {
+    updateConfidence(Math.round(prediction.confidence * 100));
+    logAction(`Confidence: ${Math.round(prediction.confidence * 100)}%`);
+  } else {
+    logAction("No detection returned");
+    updateConfidence(0);
+  }
 }
