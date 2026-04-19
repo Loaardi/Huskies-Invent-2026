@@ -1,11 +1,38 @@
 from flask import Flask, request, jsonify, render_template_string, send_from_directory
 from flask_cors import CORS
 import requests
+import json
 import os
 from security_config import get_config
 
 app = Flask(__name__, static_folder=os.path.dirname(os.path.abspath(__file__)))
 CORS(app)  # Enable CORS for all routes
+
+@app.route("/api/inspection", methods=["POST"])
+def save_inspection():
+    try:
+        data = request.json
+        
+        # Extract fields
+        wo = data.get("workOrderNumber", "N/A")
+        decision = data.get("operatorDecision", "N/A")
+        timestamp = data.get("timestamp", "N/A")
+        operator = data.get("operatorName", "N/A")
+        confidence = data.get("confidence", "0%")
+
+
+        # Format the string for the text file
+        log_entry = f"[{timestamp}] WO: {wo} | Operator: {operator} | Result: {decision} | Confidence: {confidence}\n"
+
+        # Append to a .txt file (creates it if it doesn't exist)
+        with open("inspections.txt", "a") as f:
+            f.write(log_entry)
+
+        return jsonify({"status": "success", "message": "Data saved to file"}), 200
+    
+    except Exception as e:
+        print(f"Error saving to file: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/", methods=["GET"])
 def home():
@@ -39,7 +66,7 @@ def predict():
     api_key = config["api_key"]
 
     response = requests.post(
-        "https://serverless.roboflow.com/feavens-workspace/workflows/detect-count-and-visualize",
+        "PUT_ROBOFLOW_URL_HERE",
         json={
             "api_key": api_key,
             "inputs": {
@@ -50,7 +77,6 @@ def predict():
             }
         }
     )
-
     result = response.json()
 
     # Log a warning if the annotated visualization is missing, to help with debugging
